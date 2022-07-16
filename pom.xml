@@ -42,7 +42,7 @@
     </dependencies>
 
     <scm>
-        <url>https://lab.hanium.or.kr/gaya.kps/bom_generator</url>
+        <url>https://github.com/gayakps/bom_generator</url>
     </scm>
 
     <distributionManagement>
