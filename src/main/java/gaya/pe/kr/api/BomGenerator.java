@@ -5,6 +5,7 @@ import gaya.pe.kr.exception.OptionFileNotFoundException;
 import gaya.pe.kr.type.KeyType;
 import org.cyclonedx.BomGeneratorFactory;
 import org.cyclonedx.CycloneDxSchema;
+import org.cyclonedx.exception.GeneratorException;
 import org.cyclonedx.generators.xml.BomXmlGenerator;
 import org.cyclonedx.model.*;
 import org.jsoup.Jsoup;
@@ -15,6 +16,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import javax.xml.XMLConstants;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -26,7 +28,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
+
+import static gaya.pe.kr.util.BomGeneratorUtil.documentToString;
+import static gaya.pe.kr.util.BomGeneratorUtil.writeToFile;
+
 
 public class BomGenerator {
 
@@ -36,7 +44,8 @@ public class BomGenerator {
         if ( url.contains("github") ) {
             System.out.printf("Load Repository : %s%n", url);
             Document document = Jsoup.connect(url).get();
-            Elements elementsMain = document.getElementsByClass("Details-content--hidden-not-important js-navigation-container js-active-navigation-container d-md-block");
+            Elements elementsMain = document
+                    .getElementsByClass("Details-content--hidden-not-important js-navigation-container js-active-navigation-container d-md-block");
             // Github Repo Root 에 있는 모든 파일 목록
 
             for (Element element : elementsMain) {
@@ -47,25 +56,25 @@ public class BomGenerator {
                     for (Attribute attribute : attributes) {
                         String value = attribute.getValue();
                         String key = attribute.getKey();
-                        if (value.equalsIgnoreCase("pom.xml") && key.equals("title")) { // title 중에서도 pom.xml 을 찾을 것이기 때문에 해당 내용으로 탐색
+                        if (value.equalsIgnoreCase("pom.xml") && key.equals("title")) { // Repository 의 모든 파일 중 Pom.xml 파일만 탐색
                             String href = "https://github.com/" + attributes.get("href");
                             System.out.printf("Load Pom.xml : %s%n", href);
 
                             Document pomDocument = Jsoup.connect(href).get(); // Pom.xml 로 접근
                             Elements pomContents = pomDocument.getElementsByClass("highlight tab-size js-file-line-container js-code-nav-container js-tagsearch-file");
-                            // pom xml 의 내용을 탐색색
+                            // pom xml의 모든 태그를 탐색
 
-                            Bom bom = new Bom();
-                            Component component = null;
-                            License license = null;
+                            Bom bom = new Bom(); // Bom Object 형성
+                            Component component = null; // 컴포넌트 초기화
+                            License license = null; // 라이선스 초기화
                             LicenseChoice licenseChoice = new LicenseChoice();
                             Metadata metadata = new Metadata();
-                            bom.setMetadata(metadata);
-                            bom.getMetadata().setLicenseChoice(licenseChoice);
+                            bom.setMetadata(metadata); // bom 메타 데이터 설정
+                            bom.getMetadata().setLicenseChoice(licenseChoice); // 메타 데이터에 라이선스 부여
 
-                            for (Element pomContent : pomContents) {
+                            for (Element pomContent : pomContents) { // Pom.xml 내용을 한 줄 씩 읽음
                                 Elements subNodeElements = pomContent.select("tr");
-                                KeyType nowKeyType = KeyType.NONE;
+                                KeyType nowKeyType = KeyType.NONE; // 현재 탐색 중인 태그 이름 NONE 일 경우 탐색을 시작해야함
                                 for (Element subNode : subNodeElements) {
                                     String text = subNode.text();
                                     String nowKeyTypeName = nowKeyType.name().toLowerCase(Locale.ROOT);
@@ -75,8 +84,8 @@ public class BomGenerator {
                                         for (KeyType keyType : KeyType.values()) {
                                             if (!keyType.equals(KeyType.NONE)) {
                                                 String keyTypeName = keyType.name().toLowerCase(Locale.ROOT);
-                                                if (text.equals(String.format("<%s>", keyTypeName))) {
-                                                    nowKeyType = keyType;
+                                                if (text.equals(String.format("<%s>", keyTypeName))) { // 새로운 태그를 찾은 경우
+                                                    nowKeyType = keyType; // Key Type 에 태그를 명시
                                                     switch (nowKeyType) {
                                                         case DEPENDENCY:
                                                             component = new Component();
@@ -89,14 +98,12 @@ public class BomGenerator {
                                                 }
                                             }
                                         }
-
                                     } else { // key type
                                         // 탐색 진행중이고, 만일 text 중에 같은 타입 나오면 끝내야함
                                         if (text.equals(String.format("</%s>", nowKeyTypeName))) {
                                             switch (nowKeyType) {
                                                 case DEPENDENCY: {
                                                     if (component != null) {
-//                                                            component.setPurl("pkg:npm/lodash@4.17.19"); PURL 로 Vul
                                                         component.setType(Component.Type.LIBRARY);
                                                         bom.addComponent(component);
                                                     }
@@ -171,6 +178,26 @@ public class BomGenerator {
 
 
     }
+
+    public static File createBomFile(String url) throws IllegalGithubURLException, OptionFileNotFoundException, IOException, GeneratorException, ParserConfigurationException {
+        Bom bom = createBom(url);
+        /**
+         *             Bom bom = BomGenerator.createBom("https://github.com/CycloneDX/cyclonedx-core-java");
+         *             BomXmlGenerator generator = BomGeneratorFactory.createXml(CycloneDxSchema.Version.VERSION_14, bom);
+         *             org.w3c.dom.Document doc = generator.generate();
+         *             documentToString(doc);
+         *             writeToFile(tempFile, generator.toXmlString());
+         */
+        BomXmlGenerator generator = BomGeneratorFactory.createXml(CycloneDxSchema.Version.VERSION_14, bom);
+        org.w3c.dom.Document doc = generator.generate();
+        documentToString(doc);
+        Path path = Files.createTempDirectory("cyclonedx-core-java-seonwoos");
+        return writeToFile(new File(path.toFile(), "bom.xml"), generator.toXmlString());
+    }
+
+
+
+
 
 
 }
