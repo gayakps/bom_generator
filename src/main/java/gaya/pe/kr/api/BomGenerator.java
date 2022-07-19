@@ -15,32 +15,25 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Locale;
 
 import static gaya.pe.kr.util.BomGeneratorUtil.documentToString;
 import static gaya.pe.kr.util.BomGeneratorUtil.writeToFile;
 
 
+/**
+ * @author KimSeonwoo
+ * @see gaya.pe.kr.util.BomGeneratorUtil
+ */
 public class BomGenerator {
 
-
     public static Bom createBom(String url) throws IllegalGithubURLException, OptionFileNotFoundException, IOException {
-
         if ( url.contains("github") ) {
             System.out.printf("Load Repository : %s%n", url);
             Document document = Jsoup.connect(url).get();
@@ -61,10 +54,11 @@ public class BomGenerator {
                             System.out.printf("Load Pom.xml : %s%n", href);
 
                             Document pomDocument = Jsoup.connect(href).get(); // Pom.xml 로 접근
-                            Elements pomContents = pomDocument.getElementsByClass("highlight tab-size js-file-line-container js-code-nav-container js-tagsearch-file");
+                            Elements pomContents = pomDocument.getElementsByClass("highlight tab-size js-file-line-container js-code-nav-container js-tagsearch-file js-search-container");
                             // pom xml의 모든 태그를 탐색
 
                             Bom bom = new Bom(); // Bom Object 형성
+                            bom.setComponents(new ArrayList<>());
                             Component component = null; // 컴포넌트 초기화
                             License license = null; // 라이선스 초기화
                             LicenseChoice licenseChoice = new LicenseChoice();
