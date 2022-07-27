@@ -15,6 +15,34 @@
         <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
         <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
+                 <properties>
+        <project.build.sourceEncoding>
+                 UTF-8
+                          </project.build.sourceEncoding>
+        <maven.compiler.target>
+                 1.8</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <project.build.outputTimestamp>2022-05-04T12:22:05Z</project.build.outputTimestamp>
+        <trimStackTrace>false</trimStackTrace>
+        <project.github.repository>apache/maven-mvnd</project.github.repository>
+        <repository.url>github.com:${project.github.repository}</repository.url>
+
+        <!-- dependency versions a..z -->
+        <apiguardian-api.version>1.0.0</apiguardian-api.version>
+        <assertj.version>3.16.1</assertj.version>
+        <commons-compress.version>1.21</commons-compress.version>
+        <graalvm.version>21.3.0</graalvm.version>
+        <graalvm.plugin.version>21.2.0</graalvm.plugin.version>
+        <groovy.version>3.0.9</groovy.version>
+        <jakarta.inject.version>1.0</jakarta.inject.version>
+        <jansi.version>2.4.0</jansi.version>
+        <jline.version>3.21.0</jline.version>
+        <junit.jupiter.version>5.7.2</junit.jupiter.version>
+        <logback.version>1.2.10</logback.version>
+        <maven.version>3.8.5</maven.version>
+        <maven.resolver.version>1.7.3</maven.resolver.version>
+        <slf4j.version>1.7.35</slf4j.version>
+        <sisu.version>0.3.5</sisu.version>
     </properties>
 
     <licenses>
